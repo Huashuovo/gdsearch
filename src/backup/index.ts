@@ -518,32 +518,6 @@ function CheckDifficulty(LevelData:GdLevelData){
   }
 }
 
-function SearchDifficultyDisplay(LevelData:GdLevelData){
-  if(LevelData.Level.IsDemon=="1"){
-    switch(LevelData.Level.DemonDifficulty){
-      case "3":return `Ezd`;
-      case "4":return `Med`;
-      case "0":return `Hdd`;
-      case "5":return `Insd`;
-      case "6":return `Exd`;
-    }}
-  else if(LevelData.Level.IsAuto=="1"){
-    return `Auto`;
-  }
-  else if(LevelData.Level.Stars=="0"){
-    return `NA`;
-  }
-  else if(LevelData.Level.IsDemon!="1"){
-    switch(LevelData.Level.DifficultyNumerator){
-      case "10":return `Easy`;
-      case "20":return `Normal`;
-      case "30":return `Hard`;
-      case "40":return `Harder`;
-      case "50":return `Insane`;
-    }
-  }
-}
-
 function CheckFeature(LevelData:GdLevelData){
   let result:string=''
   if(LevelData.Level.Stars=="0"){
@@ -657,7 +631,7 @@ export function apply(ctx: Context) {
         let LevelNumber:string='0'//关卡列表的序号，默认值为1
         if(Leveldata.length>1){//判断是否只有一个关卡，只有一个就不进行下面的指定关卡了
           for(let i=0;i<Leveldata.length;i++){
-            LevelList=LevelList+(i+1)+'. '+Leveldata[i].Level.LevelName+"("+SearchDifficultyDisplay(Leveldata[i])+")"+" by "+Leveldata[i].Creator.CreatorName+"\n"
+            LevelList=LevelList+(i+1)+'. '+Leveldata[i].Level.LevelName+" by "+Leveldata[i].Creator.CreatorName+"\n"
           }
           let amout:string='10';
           if(Number(Leveldata[0].PageInfo.Totol)<=10){
@@ -684,7 +658,7 @@ export function apply(ctx: Context) {
               await session?.send(h('quote',{id:session.messageId})+"已中止");
               return;
             }
-            else if(Number(LevelNumber)>=Leveldata.length+1||!/^\d+$/.test(LevelNumber)){
+            else if(Number(LevelNumber)>=Leveldata.length||!/^\d+$/.test(LevelNumber)){
               LevelNumber=''
               continue
             }
@@ -714,10 +688,10 @@ export function apply(ctx: Context) {
           //await session?.send(Context)
           //await session?.send(await GetSongURL(Leveldata[0].Level.LevelId))
         }
-        //console.log(Leveldata[0])
         const levelCardBuffer=await CreateLevelCard(Leveldata[LevelNumber],`SearchLevel`)
         const filepath=`${ImaPath}example.png`
         await writeFileSync(filepath,levelCardBuffer)
+      //console.log(Leveldata[0])
         await session?.send(h('img', { src: filepath }))
       //await session?.send(JSON.stringify(result))
       break;
