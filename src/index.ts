@@ -29,7 +29,7 @@ declare module 'koishi' {
   }
 }
 
-registerFont(path.join(__dirname, 'fonts', 'PUSAB__.otf'), { family: 'Pusab' });
+registerFont(path.join(__dirname, 'resources','fonts', 'PUSAB__.otf'), { family: 'Pusab' });
 
 const groupid=["onebot:661695432","onebot:976245666","onebot:1093710928","onebot:569801410","onebot:829768654","onebot:920929485","onebot:786304336",
   "onebot:468260393"
@@ -38,7 +38,8 @@ const groupid=["onebot:661695432","onebot:976245666","onebot:1093710928","onebot
 const TimeData=new Date();
 
 //const ImaPath='D:/koishi/koishi-app/external/gddlquery/resources/'
-const ImaPath='C:/Users/Administrator/Desktop/koishi/koishi-app/external/gddlquery/resources/'
+//const ImaPath='C:/Users/Administrator/Desktop/koishi/koishi-app/external/gddlquery/resources/'
+const ImaPath=__dirname+'/resources/';
 
 async function CreateLevelCard(levelinfo:GdLevelData,DrawType:string):Promise<Buffer>{
   const canvas=createCanvas(1920,1080)
@@ -785,7 +786,7 @@ export function apply(ctx: Context) {
         let New_LevelData:Array<GdLevelData>=[]
         if(Current_Number!=Last_Number[0].LastNumber){
           await ctx.database.set('GdData',{id:1},{LastNumber:Current_Number})
-          await delay(5000)
+          await delay(10*1000);
           const response_gd_2:any=await postData("http://www.boomlings.com/database/getGJLevels21.php",data)
           let Levledata_again=await get_gdinfo(response_gd_2)
           for(let i=0,n=0;i<Leveldata.length;i++){
@@ -807,14 +808,14 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(Leveldata[i],`NewLevel`)
             const filepath=`${ImaPath}NewLevel_${i+1}.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid,"onebot:864760069"],h('img', { src: filepath }))
             await delay(1000);
           }
         }
       }
       catch{if(typeof response_gd==='undefined') console.log("rated api返回了undefined")}
       //
-      await delay(1000*10)
+      await delay(1000*5)
       //检测Daily
       const response_daily:any=await postData("http://www.boomlings.com/database/getGJLevels21.php",data_daily)
       let Leveldata_daily:Array<GdLevelData>=[]
@@ -839,7 +840,7 @@ export function apply(ctx: Context) {
       }
       catch{if(typeof response_daily==='undefined') console.log("daily api返回了undefined")}
       //
-      await delay(1000*10)
+      await delay(1000*5)
       //检测weekly
       const response_weekly:any=await postData("http://www.boomlings.com/database/getGJLevels21.php",data_weekly)
       let Leveldata_weekly:Array<GdLevelData>=[]
@@ -864,7 +865,7 @@ export function apply(ctx: Context) {
       }
       catch{if(typeof response_weekly==='undefined') console.log("weekly api返回了undefined")}
       //
-      await delay(1000*10)
+      await delay(1000*5)
       //检测event
       const response_event:any=await postData("http://www.boomlings.com/database/getGJLevels21.php",data_event)
       let Leveldata_event:Array<GdLevelData>=[]
@@ -898,9 +899,7 @@ export function apply(ctx: Context) {
     
     ctx.command('测试 [str:text]')
       .action(async({session},str)=>{
-        await session?.send("1");
-        const a=await session?.prompt();
-        await session?.send(typeof a)
+
       })
 
     
