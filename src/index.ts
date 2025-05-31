@@ -45,8 +45,14 @@ async function CreateLevelCard(levelinfo:GdLevelData,DrawType:string):Promise<Bu
   const canvas=createCanvas(1920,1080)
   const ctx=canvas.getContext('2d')
   //提前初始化一些数据
-  const response_gddl=await fetch(`https://gdladder.com/api/level/${levelinfo.Level.LevelId}`);
-  const GddlInfo=await response_gddl.json();
+  let GddlInfo:any={}
+  try{
+    const response_gddl=await fetch(`https://gdladder.com/api/level/${levelinfo.Level.LevelId}`);
+    GddlInfo=await response_gddl.json();
+  }
+  catch{
+    GddlInfo={}
+  }
   let IsGddl:boolean=false
   let LevelRating:string='null'
   let LevelEnjoyment:string='null'
@@ -70,7 +76,7 @@ async function CreateLevelCard(levelinfo:GdLevelData,DrawType:string):Promise<Bu
   if(typeof GddlInfo?.Enjoyment=="number"){
     LevelEnjoyment=`${GddlInfo?.Enjoyment.toFixed(0)}(${checktype(GddlInfo?.Enjoyment)})`
   }
-  if(LevelEnjoyment!='null'&&LevelRating!='null'){
+  if(LevelEnjoyment!='null'||LevelRating!='null'){
     IsGddl=true
   }
   //判断应该使用什么模板
@@ -179,7 +185,7 @@ async function SetLevelTag(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
     let TagNumber:number=3;
     if(TagNumber>GddlInfo_tag.length) TagNumber=GddlInfo_tag.length;
     ctx.drawImage(await image('Material','tagbackground.png'),1410,310,500,400);
-    for(let i=0;i<TagNumber;i++){;
+    for(let i=0;i<TagNumber;i++){
       ctx.drawImage(await image('Material',`${GddlInfo_tag[i].Tag.Name}.png`),1465,500+(i*60),66,65);
     }
     ctx.font="60px Pusab";
@@ -701,20 +707,6 @@ export function apply(ctx: Context) {
 难度评级:${CheckDifficulty(Leveldata[LevelNumber])}(${Leveldata[LevelNumber].Level.Stars})
 质量评级:${CheckFeature(Leveldata[LevelNumber])}\n音乐名:${Leveldata[LevelNumber].Song.SongName}\n音乐ID:${Leveldata[LevelNumber].Song.SongId}`
         let result:LevelData|any
-        try{
-          const response_gddl=await fetch(`https://gdladder.com/api/level/${Leveldata[LevelNumber].Level.LevelId}`);
-          result=await response_gddl.json();
-          if(typeof result.Rating=="number"){
-            Context=Context+`\nTier:${result.Rating.toFixed(0)}(${checktype(result.Rating)})`
-          }
-          if(typeof result.Enjoyment=="number"){
-            Context=Context+`\nEnjoyment:${checktype(result.Enjoyment)}`
-          }
-        }
-        finally{
-          //await session?.send(Context)
-          //await session?.send(await GetSongURL(Leveldata[0].Level.LevelId))
-        }
         //console.log(Leveldata[0])
         const levelCardBuffer=await CreateLevelCard(Leveldata[LevelNumber],`SearchLevel`)
         const filepath=`${ImaPath}example.png`
@@ -725,19 +717,29 @@ export function apply(ctx: Context) {
       }
     })
     //
-    ctx.command('gd随机推关 <Lowtier:number> [HighTier:number]','从选定的Tier范围随机选出一个关卡')
+    ctx.command('gd随机推关 <minRating:number> [maxRating:number]','从选定的Tier范围随机选出一个关卡')
+    .option('minEnjoyment','-e <minEnjoyment:number> 设置最低enjoyment')
     .example('gd随机推关 17  //随机抽取一个tier17的关卡')
-    .example('gd随机推关 17 20  //随机抽取一个tier17-20的关卡')
-    .action(async({session},LowTier,HighTier)=>{
-      if(typeof HighTier=='undefined') HighTier=LowTier
-      if(LowTier>HighTier){
-        let temp=HighTier
-        HighTier=LowTier
-        LowTier=temp
+    .example('gd随机推关 17 20  //随机抽取一个tier17-20之间的关卡')
+    .example('gd随机推关 17 20 -e 5  //随机抽取一个tier17-20之间，enjoyment大于等于5的关卡')
+    .action(async({session,options},minRating,maxRating)=>{
+      if(minRating<1||maxRating<1){
+        await session.send('输入的参数不合法，请重新输入！');
+        return;
       }
-      const LevelData=await fetch(`https://gdladder.com/api/level/search?chunk=1&lowTier=${LowTier}&highTier=${HighTier}&sort=Random`)
-      const resule:LevelData|any=await LevelData.json()
-      const data=resule.levels[0]
+      if(typeof maxRating=='undefined') maxRating=minRating
+      if(minRating>maxRating){
+        let temp=maxRating
+        maxRating=minRating
+        minRating=temp
+      }
+      let url=`https://gdladder.com/api/level/search?limit=1&page=0&sort=random&minRating=${minRating}&maxRating=${maxRating}`;
+      if(typeof options?.minEnjoyment!='undefined') url+=`&minEnjoyment=${options.minEnjoyment}`;
+      const LevelData=await fetch(url);
+      const result:LevelData|any=await LevelData.json()
+      const data=result.levels[0]
+      const response_gddl_tag=await fetch(`https://gdladder.com/api/level/${data.ID}/tags`);
+      const GddlInfo_tag=await response_gddl_tag.json();
       //console.log(data)
       const levelName = data.Meta.Name;
       const rating = checktype(data.Rating);
@@ -748,7 +750,18 @@ export function apply(ctx: Context) {
       const songSize=data.Meta.Song.Size;
       const levelID=data.Meta.ID;
       const levelLength=checklength(data.Meta.Length);
-      session?.send (`关卡名: ${levelName}\n关卡作者: ${creator}\n关卡ID:${levelID}\n关卡长度:${levelLength}\n难度评级: ${rating}\n玩家评价: ${enjoyment}\n音乐名:${songName}\n音乐ID:${songID}\n音乐大小:${songSize}\n`);
+      let levelTag:string='';
+      await console.log(GddlInfo_tag);
+      for(let i=0;i<GddlInfo_tag.length;i++){
+        levelTag+=GddlInfo_tag[i].Tag.Name;
+        if(i>=2||i==GddlInfo_tag.length-1) break;
+        levelTag+=',';
+      }
+      if(levelTag=='') levelTag='null';
+      let text:string=`关卡名: ${levelName}\n关卡作者: ${creator}\n关卡ID:${levelID}\n关卡长度:${levelLength}\n难度评级: ${rating}
+玩家评价: ${enjoyment}\n音乐名:${songName}\n音乐ID:${songID}\n音乐大小:${songSize}
+关卡标签:${levelTag}`;
+      session?.send (text);
     }
   )
     //
@@ -835,7 +848,7 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_daily,`NewDaily`)
             const filepath=`${ImaPath}NewDaily.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
         }
       }
       catch{if(typeof response_daily==='undefined') console.log("daily api返回了undefined")}
@@ -860,7 +873,7 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_weekly,`NewWeekly`)
             const filepath=`${ImaPath}/NewWeekly.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
         }
       }
       catch{if(typeof response_weekly==='undefined') console.log("weekly api返回了undefined")}
@@ -885,7 +898,7 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_event,`NewEvent`)
             const filepath=`${ImaPath}NewEvent.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
         }
       }
       catch{if(typeof response_event==='undefined') console.log("event api返回了undefined")}
