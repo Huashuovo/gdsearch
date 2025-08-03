@@ -32,15 +32,36 @@ declare module 'koishi' {
 registerFont(path.join(__dirname, 'resources','fonts', 'PUSAB__.otf'), { family: 'Pusab' });
 
 const groupid=["onebot:661695432","onebot:976245666","onebot:1093710928","onebot:569801410","onebot:829768654","onebot:920929485","onebot:786304336",
-  "onebot:468260393"
-]
+  "onebot:468260393","onebot:978746194"
+];
 
-const TimeData=new Date();
+const groupid_newLevel=[...groupid,"onebot:864760069"];
+const groupid_newDaily=[...groupid,"onebot:920313852","onebot:741225629"];
+const groupid_newWeekly=[...groupid,"onebot:920313852","onebot:741225629"];
+const groupid_newEvent=[...groupid,"onebot:920313852","onebot:741225629"];
+
+const groupid_test=["onebot:661695432"];
 
 //const ImaPath='D:/koishi/koishi-app/external/gddlquery/resources/'
 //const ImaPath='C:/Users/Administrator/Desktop/koishi/koishi-app/external/gddlquery/resources/'
 const ImaPath=__dirname+'/resources/';
 
+//获取当前时间
+function CurrentTime() {
+    const now = new Date();
+    return now.toLocaleString('zh-CN', { 
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+}
+
+//生成关卡卡片的大函数
 async function CreateLevelCard(levelinfo:GdLevelData,DrawType:string):Promise<Buffer>{
   const canvas=createCanvas(1920,1080)
   const ctx=canvas.getContext('2d')
@@ -159,6 +180,7 @@ async function CreateLevelCard(levelinfo:GdLevelData,DrawType:string):Promise<Bu
   return canvas.toBuffer('image/png')
 }
 
+//填入硬币
 async function SetCoinImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
   switch(levelinfo.Level.Coins){
     case "1":{
@@ -175,6 +197,8 @@ async function SetCoinImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
     }break;
   }
 }
+
+//填入关卡标签
 async function SetLevelTag(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
   await delay(500);
   const response_gddl_tag=await fetch(`https://gdladder.com/api/level/${levelinfo.Level.LevelId}/tags`);
@@ -192,6 +216,7 @@ async function SetLevelTag(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
   }
 }
 
+//填入点赞图标
 async function SetLikeImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
   if(Number(levelinfo.Level.Likes)>=0){
     ctx.drawImage(await image('Material','like.png'),630,471,76,77)
@@ -200,6 +225,8 @@ async function SetLikeImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
     ctx.drawImage(await image('Material','dislike.png'),620,441,74,116)
   }
 }
+
+//填入游戏模式图标(也就是星星和月亮)
 async function SetGameModeImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData){
   if(levelinfo.Level.Length=="5"){
     ctx.drawImage(await image('Material','moon.png'),490,265,50,50)
@@ -208,6 +235,8 @@ async function SetGameModeImage(ctx:CanvasRenderingContext2D,levelinfo:GdLevelDa
     ctx.drawImage(await image('Material','star.png'),490,265,50,50)
   }
 }
+
+//填入恶魔头像
 async function SetDemonFace(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData,DrawType:string){
   if(DrawType=="NewLevel"&&levelinfo.Level.IsDemon=="1"&&levelinfo.Level.DemonDifficulty=="0"){
     await SetFaceFeatured(ctx,levelinfo,'Demon');
@@ -239,6 +268,7 @@ async function SetDemonFace(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData,D
   }
 }
 
+//控制图片中的文字大小
 async function TextSizeController(thistext:string,ctx:CanvasRenderingContext2D,maxWidth:number,initialFont:number,minFont:number,x:number,y:number){
   let fontSize=initialFont
 
@@ -262,6 +292,7 @@ async function TextSizeController(thistext:string,ctx:CanvasRenderingContext2D,m
   ctx.lineWidth=3;
 }
 
+//判断关卡质量评级
 async function SetFaceFeatured(ctx:CanvasRenderingContext2D,levelinfo:GdLevelData,Difficulty:string){
   if(levelinfo.Level.Stars=="0"){
     ctx.drawImage(await image('DemonFace',`${Difficulty}.png`),1000,208,300,300)
@@ -280,17 +311,21 @@ async function SetFaceFeatured(ctx:CanvasRenderingContext2D,levelinfo:GdLevelDat
     }
   }
 }
+
+//插入图片的简单函数
 async function image(paths:string,picture_name:string){
   const imagePath=path.resolve(`${ImaPath}${paths}`,picture_name)
   const image=await loadImage(imagePath)
   return image
 }
 
+//插入文字的简单函数
 function text(text:string,ctx:CanvasRenderingContext2D,x:number,y:number){
   ctx.fillText(text,x,y)
   ctx.strokeText(text,x,y)
 }
 
+//获取api的函数
 async function postData(url: string, data: any) {//使用gd的api并得到数据，用的时候得多写data
   try {
       const response = await fetch(url, {
@@ -314,7 +349,7 @@ async function postData(url: string, data: any) {//使用gd的api并得到数据
   }
 }
 
-
+//显示GDDL关卡信息的函数(用于随机推关)
 async function showvalue({session},LevelName: string): Promise<LevelData | null> {
   try {
     const response = await fetch(`https://gdladder.com/api/level/search?chunk=11&name=${encodeURIComponent(LevelName)}`);
@@ -373,10 +408,12 @@ function checklength(value){
   }
 }
 
+//让代码等待指定时长的函数
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+//判断关卡歌曲(如果确定是官方曲目才会调用)
 function CheckSong(Songnumber:string){
   let Songinfo:SongObj={SongName:"Null",ArtistName:"Null",SongId:"Null"}
   switch(Songnumber){
@@ -406,6 +443,7 @@ function CheckSong(Songnumber:string){
   return Songinfo
 }
 
+//处理从gd服务器获取的关卡信息的大函数
 async function get_gdinfo(info:any){
 
   const result=info.split("#")
@@ -724,7 +762,7 @@ export function apply(ctx: Context) {
     .example('gd随机推关 17 20 -e 5  //随机抽取一个tier17-20之间，enjoyment大于等于5的关卡')
     .action(async({session,options},minRating,maxRating)=>{
       if(minRating<1||maxRating<1){
-        await session.send('输入的参数不合法，请重新输入！');
+        await session?.send('输入的参数不合法，请重新输入！');
         return;
       }
       if(typeof maxRating=='undefined') maxRating=minRating
@@ -751,7 +789,7 @@ export function apply(ctx: Context) {
       const levelID=data.Meta.ID;
       const levelLength=checklength(data.Meta.Length);
       let levelTag:string='';
-      await console.log(GddlInfo_tag);
+      //await console.log(GddlInfo_tag);
       for(let i=0;i<GddlInfo_tag.length;i++){
         levelTag+=GddlInfo_tag[i].Tag.Name;
         if(i>=2||i==GddlInfo_tag.length-1) break;
@@ -798,9 +836,12 @@ export function apply(ctx: Context) {
         const Last_Number=await ctx.database.get('GdData',{id:1},['LastNumber'])
         let New_LevelData:Array<GdLevelData>=[]
         if(Current_Number!=Last_Number[0].LastNumber){
-          await ctx.database.set('GdData',{id:1},{LastNumber:Current_Number})
-          await delay(10*1000);
+          await delay(10*1000);//检测到新关卡后等待10秒再进行第二轮查询，这是为了防止新关卡还没得到质量评级就被发送
           const response_gd_2:any=await postData("http://www.boomlings.com/database/getGJLevels21.php",data)
+          if(typeof response_gd_2==='undefined') {
+            console.log(CurrentTime()+"  !!!第二轮的rated api返回了undefined")
+            return;
+          }
           let Levledata_again=await get_gdinfo(response_gd_2)
           for(let i=0,n=0;i<Leveldata.length;i++){
             if(Levledata_again[i].Level.LevelId==Current_Number){
@@ -812,7 +853,7 @@ export function apply(ctx: Context) {
             }
           }
           for(let i=0;i<New_LevelData.length;i++){
-            console.log(TimeData.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })+'  *新关卡*:'+New_LevelData[i].Level.LevelName)
+            console.log(CurrentTime()+'  *新关卡*:'+New_LevelData[i].Level.LevelName)
             // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新关卡*\n关卡名:"+New_LevelData[i].Level.LevelName
             //   +"\n关卡作者:"+New_LevelData[i].Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData[i])
             //   +"\n关卡难度:"+CheckDifficulty(New_LevelData[i])+'('+New_LevelData[i].Level.Stars+')'
@@ -821,12 +862,14 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(Leveldata[i],`NewLevel`)
             const filepath=`${ImaPath}NewLevel_${i+1}.png`
             await writeFileSync(filepath,levelCardBuffer)
+            //await ctx.broadcast(["onebot:661695432"],h('img', { src: filepath })) //发送到测试群聊
             await ctx.broadcast([...groupid,"onebot:864760069"],h('img', { src: filepath }))
+            await ctx.database.set('GdData',{id:1},{LastNumber:Current_Number});
             await delay(1000);
           }
         }
       }
-      catch{if(typeof response_gd==='undefined') console.log("rated api返回了undefined")}
+      catch{if(typeof response_gd==='undefined') console.log(CurrentTime()+"   !!!rated api返回了undefined")}
       //
       await delay(1000*5)
       //检测Daily
@@ -839,7 +882,7 @@ export function apply(ctx: Context) {
         if(Current_Number_daily!=Last_Number_daily[0].LastNumber){
           await ctx.database.set('GdData',{id:2},{LastNumber:Current_Number_daily})
           let New_LevelData_daily=Leveldata_daily[0]
-          console.log(TimeData.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })+'  *新daily*:'+New_LevelData_daily.Level.LevelName)
+          console.log(CurrentTime()+'  *新daily*:'+New_LevelData_daily.Level.LevelName)
             // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新daily*\n关卡名:"+New_LevelData_daily.Level.LevelName
             //   +"\n关卡作者:"+New_LevelData_daily.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_daily)
             //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_daily)+'('+New_LevelData_daily.Level.Stars+')'
@@ -848,10 +891,10 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_daily,`NewDaily`)
             const filepath=`${ImaPath}NewDaily.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid_newDaily],h('img', { src: filepath }))
         }
       }
-      catch{if(typeof response_daily==='undefined') console.log("daily api返回了undefined")}
+      catch{if(typeof response_daily==='undefined') console.log(CurrentTime()+"   !!!daily api返回了undefined")}
       //
       await delay(1000*5)
       //检测weekly
@@ -864,7 +907,7 @@ export function apply(ctx: Context) {
         if(Current_Number_weekly!=Last_Number_weekly[0].LastNumber){
           await ctx.database.set('GdData',{id:3},{LastNumber:Current_Number_weekly})
           let New_LevelData_weekly=Leveldata_weekly[0]
-          console.log(TimeData.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })+'  *新weekly*:'+New_LevelData_weekly.Level.LevelName)
+          console.log(CurrentTime()+'  *新weekly*:'+New_LevelData_weekly.Level.LevelName)
             // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新weekly*\n关卡名:"+New_LevelData_weekly.Level.LevelName
             //   +"\n关卡作者:"+New_LevelData_weekly.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_weekly)
             //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_weekly)+'('+New_LevelData_weekly.Level.Stars+')'
@@ -873,10 +916,10 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_weekly,`NewWeekly`)
             const filepath=`${ImaPath}/NewWeekly.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid_newWeekly],h('img', { src: filepath }))
         }
       }
-      catch{if(typeof response_weekly==='undefined') console.log("weekly api返回了undefined")}
+      catch{if(typeof response_weekly==='undefined') console.log(CurrentTime()+"   !!!weekly api返回了undefined")}
       //
       await delay(1000*5)
       //检测event
@@ -889,7 +932,7 @@ export function apply(ctx: Context) {
         if(Current_Number_event!=Last_Number_event[0].LastNumber){
           await ctx.database.set('GdData',{id:4},{LastNumber:Current_Number_event})
           let New_LevelData_event=Leveldata_event[0]
-          console.log(TimeData.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })+'  *新event*:'+New_LevelData_event.Level.LevelName)
+          console.log(CurrentTime()+'  *新event*:'+New_LevelData_event.Level.LevelName)
             // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新event*\n关卡名:"+New_LevelData_event.Level.LevelName
             //   +"\n关卡作者:"+New_LevelData_event.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_event)
             //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_event)+'('+New_LevelData_event.Level.Stars+')'
@@ -898,16 +941,11 @@ export function apply(ctx: Context) {
             const levelCardBuffer=await CreateLevelCard(New_LevelData_event,`NewEvent`)
             const filepath=`${ImaPath}NewEvent.png`
             await writeFileSync(filepath,levelCardBuffer)
-            await ctx.broadcast([...groupid,"onebot:920313852","onebot:741225629"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid_newEvent],h('img', { src: filepath }))
         }
       }
-      catch{if(typeof response_event==='undefined') console.log("event api返回了undefined")}
-      
-      //
-      //await delay(1000*10)
-      //测试用例，通过检查我自己的关卡列表来测试
-      
-  }, 1000*60); 
+      catch{if(typeof response_event==='undefined') console.log(CurrentTime()+"   !!!event api返回了undefined")}
+  }, 1000*60);
 
     
     ctx.command('测试 [str:text]')
