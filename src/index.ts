@@ -8,7 +8,6 @@ import { LevelObj, CreatorObj,SongObj,PageInfoObj, GdLevelData,LevelData, GdSong
 import { error } from 'console';
 import { TIMEOUT } from 'dns';
 
-
 export const name = 'gddlquery'
 
 export interface Config {}
@@ -443,7 +442,7 @@ function CheckSong(Songnumber:string){
   return Songinfo
 }
 
-//处理从gd服务器获取的关卡信息的大函数
+//处理从gd服务器获取的关卡信息的大函数(字符串数组->对象数组)
 async function get_gdinfo(info:any){
 
   const result=info.split("#")
@@ -537,6 +536,7 @@ async function get_gdinfo(info:any){
   return Level_data
 }
 
+//判断是什么难度
 function CheckDifficulty(LevelData:GdLevelData){
   if(LevelData.Level.IsDemon=="1"){
     switch(LevelData.Level.DemonDifficulty){
@@ -563,6 +563,7 @@ function CheckDifficulty(LevelData:GdLevelData){
   }
 }
 
+//同样判断是什么难度，但用于在搜索栏目中显示难度缩写
 function SearchDifficultyDisplay(LevelData:GdLevelData){
   if(LevelData.Level.IsDemon=="1"){
     switch(LevelData.Level.DemonDifficulty){
@@ -589,6 +590,7 @@ function SearchDifficultyDisplay(LevelData:GdLevelData){
   }
 }
 
+//判断关卡是什么质量评级
 function CheckFeature(LevelData:GdLevelData){
   let result:string=''
   if(LevelData.Level.Stars=="0"){
@@ -610,6 +612,7 @@ function CheckFeature(LevelData:GdLevelData){
   return result
 }
 
+//通过songfilehub获取歌曲下载链接(很多时候得到的歌曲是错误的因此未使用)
 async function GetSongURL(LevelID:string){
   const url='https://api.songfilehub.com/songs?levelID='+LevelID
   const response=await fetch(url)
@@ -618,6 +621,7 @@ async function GetSongURL(LevelID:string){
   return SongURL
 }
 
+//判断关卡长度
 function CheckLength(LevelData:GdLevelData){
   switch(LevelData.Level.Length){
     case "0":return "Tiny";
@@ -629,12 +633,12 @@ function CheckLength(LevelData:GdLevelData){
   }
 }
 
+//koishi的主函数
 export function apply(ctx: Context) {
   
   ctx.model.extend('GdData',{id:"integer",LastNumber:"string"},{autoInc:true})
 
-
-
+  //gddl查询命令代码(用于最开始的练手功能，不太有用只是保留)
   ctx.command('gddl查询 <LevelName:text> [page:number]',`从GDDL上查询关卡`)
     .action(async({session}, LevelName:string,page: number) => {
       const data:any=showvalue({session},LevelName)
@@ -659,6 +663,7 @@ export function apply(ctx: Context) {
         });
     });
 
+    //gd查询命令的代码
     ctx.command('gd查询 <str:text>','在gd服务器上进行关卡查询')
     .alias('gdsearch','与gd查询等效')
     .example('gd查询 bloodbath //与在游戏内打开rated only过滤器搜索bloodbath结果相同')
@@ -740,21 +745,16 @@ export function apply(ctx: Context) {
             continue;
           }
         }
-        let Context:string=`关卡名:${Leveldata[LevelNumber].Level.LevelName}\n关卡作者:${Leveldata[LevelNumber].Creator.CreatorName}
-关卡ID:${Leveldata[LevelNumber].Level.LevelId}\n关卡长度:${CheckLength(Leveldata[LevelNumber])}
-难度评级:${CheckDifficulty(Leveldata[LevelNumber])}(${Leveldata[LevelNumber].Level.Stars})
-质量评级:${CheckFeature(Leveldata[LevelNumber])}\n音乐名:${Leveldata[LevelNumber].Song.SongName}\n音乐ID:${Leveldata[LevelNumber].Song.SongId}`
-        let result:LevelData|any
         //console.log(Leveldata[0])
         const levelCardBuffer=await CreateLevelCard(Leveldata[LevelNumber],`SearchLevel`)
         const filepath=`${ImaPath}example.png`
         await writeFileSync(filepath,levelCardBuffer)
         await session?.send(h('img', { src: filepath }))
-      //await session?.send(JSON.stringify(result))
       break;
       }
     })
-    //
+
+    //gd随机推关的命令，因为是从gddl获取的数据，因此使用的是gddl查询的函数(所以其实gddl查询也并非没有用处的样子)
     ctx.command('gd随机推关 <minRating:number> [maxRating:number]','从选定的Tier范围随机选出一个关卡')
     .option('minEnjoyment','-e <minEnjoyment:number> 设置最低enjoyment')
     .example('gd随机推关 17  //随机抽取一个tier17的关卡')
@@ -802,7 +802,8 @@ export function apply(ctx: Context) {
       session?.send (text);
     }
   )
-    //
+
+    //关卡播报的代码
     ctx.setInterval(async () => {
       const data = {
         "type": 11,
@@ -853,12 +854,7 @@ export function apply(ctx: Context) {
             }
           }
           for(let i=0;i<New_LevelData.length;i++){
-            console.log(CurrentTime()+'  *新关卡*:'+New_LevelData[i].Level.LevelName)
-            // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新关卡*\n关卡名:"+New_LevelData[i].Level.LevelName
-            //   +"\n关卡作者:"+New_LevelData[i].Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData[i])
-            //   +"\n关卡难度:"+CheckDifficulty(New_LevelData[i])+'('+New_LevelData[i].Level.Stars+')'
-            //   +"\n关卡质量:"+CheckFeature(New_LevelData[i])
-            // )
+            console.log(CurrentTime()+'  *新关卡*:'+New_LevelData[i].Level.LevelName)//有新关卡的时候就在控制台也播报，用于debug
             const levelCardBuffer=await CreateLevelCard(Leveldata[i],`NewLevel`)
             const filepath=`${ImaPath}NewLevel_${i+1}.png`
             await writeFileSync(filepath,levelCardBuffer)
@@ -955,5 +951,3 @@ export function apply(ctx: Context) {
 
     
 }
-//音乐下载链接:    https://api.songfilehub.com/songs?levelID=
-//"delay"
