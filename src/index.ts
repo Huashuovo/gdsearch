@@ -35,9 +35,9 @@ const groupid=["onebot:661695432","onebot:976245666","onebot:1093710928","onebot
 ];
 
 const groupid_newLevel=[...groupid,"onebot:864760069"];
-const groupid_newDaily=[...groupid,"onebot:920313852","onebot:741225629"];
-const groupid_newWeekly=[...groupid,"onebot:920313852","onebot:741225629"];
-const groupid_newEvent=[...groupid,"onebot:920313852","onebot:741225629"];
+const groupid_newDaily=[...groupid,"onebot:920313852","onebot:741225629","onebot:1055329853"];
+const groupid_newWeekly=[...groupid,"onebot:920313852","onebot:741225629","onebot:1055329853"];
+const groupid_newEvent=[...groupid,"onebot:920313852","onebot:741225629","onebot:1055329853"];
 
 const groupid_test=["onebot:661695432"];
 
@@ -719,6 +719,7 @@ export function apply(ctx: Context) {
           }
           LevelList=LevelList+"\n输入序号以选中关卡,输入“结束”以中止搜索，输入“下一页”以翻页~"
           await session?.send(LevelList)
+          //下面的循环用于等待玩家选关，排除掉那些非法的指令并不中断等待
           while(1){
             LevelNumber=await session?.prompt(1000*30)!
             if(!LevelNumber){
@@ -761,8 +762,12 @@ export function apply(ctx: Context) {
     .example('gd随机推关 17 20  //随机抽取一个tier17-20之间的关卡')
     .example('gd随机推关 17 20 -e 5  //随机抽取一个tier17-20之间，enjoyment大于等于5的关卡')
     .action(async({session,options},minRating,maxRating)=>{
-      if(minRating<1||maxRating<1){
-        await session?.send('输入的参数不合法，请重新输入！');
+      if(typeof minRating=='undefined'){
+        await session?.send("请至少输入一个数字！");
+        return;
+      }
+      if(minRating<1||maxRating<1||minRating>35||maxRating>35){
+        await session?.send('输入的参数不合法,请重新输入哦~');
         return;
       }
       if(typeof maxRating=='undefined') maxRating=minRating
@@ -854,12 +859,12 @@ export function apply(ctx: Context) {
             }
           }
           for(let i=0;i<New_LevelData.length;i++){
-            console.log(CurrentTime()+'  *新关卡*:'+New_LevelData[i].Level.LevelName)//有新关卡的时候就在控制台也播报，用于debug
+            console.log(CurrentTime()+'  *新关卡('+i+1+')*:'+New_LevelData[i].Level.LevelName)//有新关卡的时候就在控制台也播报，用于debug
             const levelCardBuffer=await CreateLevelCard(Leveldata[i],`NewLevel`)
             const filepath=`${ImaPath}NewLevel_${i+1}.png`
             await writeFileSync(filepath,levelCardBuffer)
             //await ctx.broadcast(["onebot:661695432"],h('img', { src: filepath })) //发送到测试群聊
-            await ctx.broadcast([...groupid,"onebot:864760069"],h('img', { src: filepath }))
+            await ctx.broadcast([...groupid_newLevel],h('img', { src: filepath }))
             await ctx.database.set('GdData',{id:1},{LastNumber:Current_Number});
             await delay(1000);
           }
@@ -879,11 +884,6 @@ export function apply(ctx: Context) {
           await ctx.database.set('GdData',{id:2},{LastNumber:Current_Number_daily})
           let New_LevelData_daily=Leveldata_daily[0]
           console.log(CurrentTime()+'  *新daily*:'+New_LevelData_daily.Level.LevelName)
-            // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新daily*\n关卡名:"+New_LevelData_daily.Level.LevelName
-            //   +"\n关卡作者:"+New_LevelData_daily.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_daily)
-            //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_daily)+'('+New_LevelData_daily.Level.Stars+')'
-            //   +"\n关卡质量:"+CheckFeature(New_LevelData_daily)
-            // )
             const levelCardBuffer=await CreateLevelCard(New_LevelData_daily,`NewDaily`)
             const filepath=`${ImaPath}NewDaily.png`
             await writeFileSync(filepath,levelCardBuffer)
@@ -904,11 +904,6 @@ export function apply(ctx: Context) {
           await ctx.database.set('GdData',{id:3},{LastNumber:Current_Number_weekly})
           let New_LevelData_weekly=Leveldata_weekly[0]
           console.log(CurrentTime()+'  *新weekly*:'+New_LevelData_weekly.Level.LevelName)
-            // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新weekly*\n关卡名:"+New_LevelData_weekly.Level.LevelName
-            //   +"\n关卡作者:"+New_LevelData_weekly.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_weekly)
-            //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_weekly)+'('+New_LevelData_weekly.Level.Stars+')'
-            //   +"\n关卡质量:"+CheckFeature(New_LevelData_weekly)
-            // )
             const levelCardBuffer=await CreateLevelCard(New_LevelData_weekly,`NewWeekly`)
             const filepath=`${ImaPath}/NewWeekly.png`
             await writeFileSync(filepath,levelCardBuffer)
@@ -929,11 +924,6 @@ export function apply(ctx: Context) {
           await ctx.database.set('GdData',{id:4},{LastNumber:Current_Number_event})
           let New_LevelData_event=Leveldata_event[0]
           console.log(CurrentTime()+'  *新event*:'+New_LevelData_event.Level.LevelName)
-            // ctx.broadcast(["onebot:661695432","onebot:976245666"],"*新event*\n关卡名:"+New_LevelData_event.Level.LevelName
-            //   +"\n关卡作者:"+New_LevelData_event.Creator.CreatorName+"\n关卡长度:"+CheckLength(New_LevelData_event)
-            //   +"\n关卡难度:"+CheckDifficulty(New_LevelData_event)+'('+New_LevelData_event.Level.Stars+')'
-            //   +"\n关卡质量:"+CheckFeature(New_LevelData_event)
-            // )
             const levelCardBuffer=await CreateLevelCard(New_LevelData_event,`NewEvent`)
             const filepath=`${ImaPath}NewEvent.png`
             await writeFileSync(filepath,levelCardBuffer)
