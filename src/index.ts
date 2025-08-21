@@ -31,7 +31,7 @@ declare module 'koishi' {
 registerFont(path.join(__dirname, 'resources','fonts', 'PUSAB__.otf'), { family: 'Pusab' });
 
 const groupid=["onebot:661695432","onebot:976245666","onebot:1093710928","onebot:569801410","onebot:829768654","onebot:920929485","onebot:786304336",
-  "onebot:468260393","onebot:978746194"
+  "onebot:468260393","onebot:978746194","onebot:237206824"
 ];
 
 const groupid_newLevel=[...groupid,"onebot:864760069"];
@@ -648,7 +648,7 @@ export function apply(ctx: Context) {
           const levelName = data.Meta.Name;
           const rating = checktype(data.Rating);
           const enjoyment = checktype(data.Enjoyment);
-          const creator = data.Meta.Creator;
+          const creator = data.Meta.Publisher?.name || '未知作者';
           const songName=data.Meta.Song.Name;
           const songID=data.Meta.Song.ID;
           const songSize=data.Meta.Song.Size;
@@ -781,13 +781,13 @@ export function apply(ctx: Context) {
       const LevelData=await fetch(url);
       const result:LevelData|any=await LevelData.json()
       const data=result.levels[0]
+      //console.log(data);
       const response_gddl_tag=await fetch(`https://gdladder.com/api/level/${data.ID}/tags`);
       const GddlInfo_tag=await response_gddl_tag.json();
-      //console.log(data)
       const levelName = data.Meta.Name;
       const rating = checktype(data.Rating);
       const enjoyment = checktype(data.Enjoyment);
-      const creator = data.Meta.Creator;
+      const creator = data.Meta.Publisher?.name || '未知作者';
       const songName=data.Meta.Song.Name;
       const songID=data.Meta.Song.ID;
       const songSize=data.Meta.Song.Size;
@@ -859,7 +859,7 @@ export function apply(ctx: Context) {
             }
           }
           for(let i=0;i<New_LevelData.length;i++){
-            console.log(CurrentTime()+'  *新关卡('+i+1+')*:'+New_LevelData[i].Level.LevelName)//有新关卡的时候就在控制台也播报，用于debug
+            console.log(CurrentTime()+'  *新关卡('+(i+1)+')*:'+New_LevelData[i].Level.LevelName)//有新关卡的时候就在控制台也播报，用于debug
             const levelCardBuffer=await CreateLevelCard(Leveldata[i],`NewLevel`)
             const filepath=`${ImaPath}NewLevel_${i+1}.png`
             await writeFileSync(filepath,levelCardBuffer)

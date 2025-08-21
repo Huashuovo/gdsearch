@@ -15,7 +15,6 @@ export interface LevelData {
     Meta: {
       ID?: number| null;
       Name?: string| null;
-      Creator?: string| null;
       Description?: string | null;
       SongID?: number| null;
       Length?: number| null;
@@ -27,6 +26,9 @@ export interface LevelData {
         Author?: string| null;
         Size?: string| null;
       };
+      Publisher?: {
+        name?: string | null;
+      }
     };
   }
   
